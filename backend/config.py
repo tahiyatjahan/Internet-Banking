@@ -14,6 +14,6 @@ class Config:
 
 	@property
 	def sqlalchemy_database_uri(self) -> str:
-		return f"mysql://{self.db_user}:{self.db_password}@{self.db_host}:{self.db_port}/{self.db_name}"
+		return f"mysql+pymysql://{self.db_user}:{self.db_password}@{self.db_host}:{self.db_port}/{self.db_name}"
 
 

@@ -20,7 +20,7 @@ def _get_or_create_account(user_id: int) -> Account:
 	if not user:
 		raise ValueError("User not found")
 	if user.account:
-+		return user.account
+		return user.account
 	account = Account(user_id=user.id)
 	db.session.add(account)
 	db.session.flush()

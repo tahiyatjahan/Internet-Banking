@@ -1,12 +1,12 @@
 ## Internet Banking - Module 1 (Top-ups)
 
 Stack:
-- Language: JavaScript (frontend) + Python (backend)
-- Frameworks: Flask (backend) + React.js (frontend)
+- Language: JavaScript (frontend + backend)
+- Frameworks: Express (backend) + React.js (frontend)
 - Styling: CSS
 - Database: MySQL
-- ORM: SQLAlchemy
-- Deployment: Render (backend) + Vercel (frontend) + Railway (DB)
+- ORM: Sequelize
+- Deployment: Render (or Railway) for backend + Vercel for frontend + Railway for DB
 
 This module implements two features:
 - Add money from Visa/MasterCard (mocked card processor)
@@ -14,15 +14,14 @@ This module implements two features:
 
 ### Project Structure
 ```
-backend/
-  app.py
-  config.py
-  database.py
-  models.py
-  routes/
-    __init__.py
-    topup.py
-  requirements.txt
+server/
+  package.json
+  src/
+    index.js
+    db.js
+    models.js
+    routes/
+      topup.js
   .env.example
 frontend/
   (Vite React app)
@@ -31,28 +30,20 @@ README.md
 ```
 
 ### Prerequisites
-- Python 3.10+
 - Node 18+
 - MySQL 8 (or Railway MySQL)
 
-### Backend Setup
+### Backend (Node/Express) Setup
 1. Create and fill env:
-   - Copy `backend/.env.example` to `backend/.env` and set values.
-2. Create virtualenv and install:
+   - Copy `server/.env.example` to `server/.env` and set values.
+2. Install and run:
    ```bash
-   cd backend
-   python3 -m venv .venv
-   source .venv/bin/activate
-   pip install -r requirements.txt
+   cd server
+   npm install
+   npm run dev
    ```
-3. Initialize database tables:
-   ```bash
-   flask --app app.py db-init
-   ```
-4. Run backend:
-   ```bash
-   flask --app app.py run --debug
-   ```
+   - The server will connect to MySQL and auto-create tables via `sequelize.sync()`.
+   - Default URL: `http://localhost:5000`
 
 ### Frontend Setup
 1. Install deps and run:
@@ -72,9 +63,9 @@ README.md
 Both create a `Transaction` and credit the user's `Account` balance upon success (mocked processor validation).
 
 ### Deployment (high-level)
-- Backend to Render: set environment variables, start command `gunicorn app:app`.
-- Frontend to Vercel: set `VITE_API_BASE` env var to Render backend URL.
-- Database on Railway: create MySQL instance and copy credentials to backend `.env`.
+- Backend (Render/Railway): set environment variables, start command `node src/index.js`.
+- Frontend (Vercel): set `VITE_API_BASE` env var to backend URL.
+- Database (Railway): create MySQL instance and copy credentials to backend `.env`.
 
 ### GitHub
 To initialize and push:
@@ -82,7 +73,7 @@ To initialize and push:
 cd /Users/namu/InternetBanking
 git init
 git add .
-git commit -m "Initial commit: Module 1 top-ups (card & bank)"
+git commit -m "Initial commit: Module 1 top-ups (card & bank) - Node backend"
 git branch -M main
 git remote add origin <YOUR_GITHUB_REPO_URL>
 git push -u origin main

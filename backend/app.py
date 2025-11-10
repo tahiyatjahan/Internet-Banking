@@ -1,5 +1,7 @@
+from pathlib import Path
 from flask import Flask, jsonify
 from flask_cors import CORS
+from dotenv import load_dotenv
 
 from config import Config
 from database import db
@@ -7,6 +9,8 @@ from routes import api_bp
 
 
 def create_app() -> Flask:
+	# Load environment variables from .env in this directory if present
+	load_dotenv(dotenv_path=Path(__file__).parent / ".env")
 	app = Flask(__name__)
 	cfg = Config()
 
