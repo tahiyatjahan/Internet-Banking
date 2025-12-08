@@ -4,6 +4,8 @@ import cors from 'cors'
 import { sequelize } from './db.js'
 import { User } from './models.js'
 import topupRoutes from './routes/topup.js'
+import loanRoutes from './routes/loans.js'
+import requestRoutes from './routes/requests.js'
 
 const app = express()
 
@@ -13,6 +15,8 @@ app.use(express.json())
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }))
 app.use('/api', topupRoutes)
+app.use('/api', loanRoutes)
+app.use('/api', requestRoutes)
 
 const port = Number(process.env.PORT || 5000)
 

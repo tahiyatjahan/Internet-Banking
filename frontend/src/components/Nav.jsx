@@ -8,6 +8,9 @@ export default function Nav() {
 			<div className="links">
 				<Link className={pathname === '/' ? 'active' : ''} to="/">Card Top-up</Link>
 				<Link className={pathname === '/bank' ? 'active' : ''} to="/bank">Bank Top-up</Link>
+				<Link className={pathname === '/prepaid' ? 'active' : ''} to="/prepaid">Prepaid/Gift</Link>
+				<Link className={pathname === '/loans' ? 'active' : ''} to="/loans">Microloans</Link>
+				<Link className={pathname === '/requests' ? 'active' : ''} to="/requests">Money Requests</Link>
 			</div>
 		</nav>
 	)
