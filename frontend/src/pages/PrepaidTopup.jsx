@@ -1,8 +1,9 @@
 import { useState } from 'react'
+import { useAuth } from '../context/AuthContext.jsx'
 import { postJson } from '../api'
 
 export default function PrepaidTopup() {
-	const [userId, setUserId] = useState(1)
+	const { user } = useAuth()
 	const [loading, setLoading] = useState(false)
 	const [error, setError] = useState('')
 	const [success, setSuccess] = useState('')
@@ -10,9 +11,13 @@ export default function PrepaidTopup() {
 	const [form, setForm] = useState({ amount: '', cardNumber: '', pin: '' })
 
 	async function submit() {
+		if (!user) {
+			setError('Please login first')
+			return
+		}
 		setLoading(true); setError(''); setSuccess('')
 		try {
-			const res = await postJson('/api/topup/prepaid', { userId, ...form })
+			const res = await postJson('/api/topup/prepaid', { userId: user.id, ...form })
 			setSuccess(`Top-up successful. Txn #${res.transactionId}`)
 			setBalance(res.balance)
 			setForm({ amount: '', cardNumber: '', pin: '' })
@@ -29,10 +34,6 @@ export default function PrepaidTopup() {
 			<p className="subtitle">All amounts are in BDT (৳).</p>
 			<div className="balance">Latest balance result: {balance ?? '—'} BDT</div>
 			<div className="form card">
-				<div className="field" style={{ maxWidth: 240 }}>
-					<label>User ID</label>
-					<input value={userId} onChange={e => setUserId(Number(e.target.value || 0))} placeholder="1" />
-				</div>
 				<div className="field">
 					<label>Amount (BDT)</label>
 					<input value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} placeholder="1000.00" />

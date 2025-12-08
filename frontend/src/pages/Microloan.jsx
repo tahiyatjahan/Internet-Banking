@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
+import { useAuth } from '../context/AuthContext.jsx'
 import { postJson } from '../api'
 
 export default function Microloan() {
-	const [userId, setUserId] = useState(1)
+	const { user } = useAuth()
 	const [loading, setLoading] = useState(false)
 	const [error, setError] = useState('')
 	const [success, setSuccess] = useState('')
@@ -13,12 +14,13 @@ export default function Microloan() {
 	const [repayLoanId, setRepayLoanId] = useState('')
 
 	useEffect(() => {
-		loadLoans()
-	}, [userId])
+		if (user) loadLoans()
+	}, [user])
 
 	async function loadLoans() {
+		if (!user) return
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_BASE || 'http://localhost:5000'}/api/loans/${userId}`)
+			const res = await fetch(`${import.meta.env.VITE_API_BASE || 'http://localhost:9135'}/api/loans/${user.id}`)
 			const data = await res.json()
 			if (data.success) {
 				setLoans(data.loans)
@@ -29,10 +31,14 @@ export default function Microloan() {
 	}
 
 	async function requestLoan() {
+		if (!user) {
+			setError('Please login first')
+			return
+		}
 		setLoading(true); setError(''); setSuccess('')
 		try {
 			const res = await postJson('/api/loans/request', {
-				userId,
+				userId: user.id,
 				amount: form.amount,
 				interestRate: form.interestRate,
 				termDays: form.termDays
@@ -49,10 +55,14 @@ export default function Microloan() {
 	}
 
 	async function repayLoan() {
+		if (!user) {
+			setError('Please login first')
+			return
+		}
 		setLoading(true); setError(''); setSuccess('')
 		try {
 			const res = await postJson('/api/loans/repay', {
-				userId,
+				userId: user.id,
 				loanId: repayLoanId
 			})
 			setSuccess(`Loan repaid successfully! Repaid amount: ${res.repaidAmount} BDT`)
@@ -99,10 +109,6 @@ export default function Microloan() {
 
 			{activeTab === 'request' && (
 				<div className="form card">
-					<div className="field" style={{ maxWidth: 240 }}>
-						<label>User ID</label>
-						<input value={userId} onChange={e => setUserId(Number(e.target.value || 0))} placeholder="1" />
-					</div>
 					<div className="field">
 						<label>Loan Amount (BDT)</label>
 						<input value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} placeholder="5000.00" />
@@ -126,10 +132,6 @@ export default function Microloan() {
 
 			{activeTab === 'repay' && (
 				<div className="form card">
-					<div className="field" style={{ maxWidth: 240 }}>
-						<label>User ID</label>
-						<input value={userId} onChange={e => setUserId(Number(e.target.value || 0))} placeholder="1" />
-					</div>
 					{activeLoans.length > 0 ? (
 						<>
 							<div className="field">

@@ -6,7 +6,8 @@ User.init(
 	{
 		id: { type: DataTypes.INTEGER.UNSIGNED, autoIncrement: true, primaryKey: true },
 		email: { type: DataTypes.STRING(255), allowNull: false, unique: true },
-		fullName: { type: DataTypes.STRING(255), allowNull: false }
+		fullName: { type: DataTypes.STRING(255), allowNull: false },
+		password: { type: DataTypes.STRING(255), allowNull: false }
 	},
 	{ sequelize, tableName: 'users', timestamps: true, createdAt: 'created_at', updatedAt: false }
 )

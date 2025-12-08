@@ -35,7 +35,7 @@ README.md
 
 ### Backend (Node/Express) Setup
 1. Create and fill env:
-   - Copy `server/.env.example` to `server/.env` and set values.
+   - Copy `server/.env.example` to `server/.env` and set values (`PORT=9135` to match defaults).
 2. Install and run:
    ```bash
    cd server
@@ -43,7 +43,7 @@ README.md
    npm run dev
    ```
    - The server will connect to MySQL and auto-create tables via `sequelize.sync()`.
-   - Default URL: `http://localhost:5000`
+   - Default URL: `http://localhost:9135`
 
 ### Frontend Setup
 1. Install deps and run:
@@ -53,6 +53,7 @@ README.md
    npm run dev
    ```
 2. Ensure `VITE_API_BASE` in `frontend/.env` points to the backend (e.g., `http://localhost:5000`).
+   - Default fallback is now `http://localhost:9135`, so use that value unless deployed elsewhere.
 
 ### API Endpoints
 - `POST /api/topup/card`

@@ -58,8 +58,9 @@ router.post('/loans/request', async (req, res) => {
 			}, { transaction: t })
 			
 			// Credit the account
-			const newBalance = Number(account.balance) + amt
-			account.balance = newBalance
+			const currentBalance = parseFloat(String(account.balance)) || 0
+			const newBalance = currentBalance + amt
+			account.balance = newBalance.toFixed(2)
 			await account.save({ transaction: t })
 			
 			// Create transaction record
@@ -99,16 +100,19 @@ router.post('/loans/repay', async (req, res) => {
 			if (loan.userId !== Number(userId)) throw new Error('Unauthorized')
 			if (loan.status !== 'ACTIVE') throw new Error('Loan is not active')
 			
-			const totalAmount = Number(loan.totalAmount)
-			const currentBalance = Number(account.balance)
+			const totalAmount = parseFloat(String(loan.totalAmount)) || 0
+			const currentBalance = parseFloat(String(account.balance)) || 0
+			
+			// Debug logging (remove in production)
+			console.log(`Repay loan check - Balance: ${currentBalance}, Required: ${totalAmount}, Account ID: ${account.id}`)
 			
 			if (currentBalance < totalAmount) {
-				throw new Error(`Insufficient balance. Required: ${totalAmount.toFixed(2)} BDT, Available: ${currentBalance.toFixed(2)} BDT`)
+				throw new Error(`Insufficient balance to repay loan. Required: ${totalAmount.toFixed(2)} BDT (principal + interest), Available: ${currentBalance.toFixed(2)} BDT. Please add more funds to your account.`)
 			}
 			
 			// Deduct from account
 			const newBalance = currentBalance - totalAmount
-			account.balance = newBalance
+			account.balance = newBalance.toFixed(2)
 			await account.save({ transaction: t })
 			
 			// Update loan status

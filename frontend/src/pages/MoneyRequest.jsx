@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
+import { useAuth } from '../context/AuthContext.jsx'
 import { postJson } from '../api'
 
 export default function MoneyRequest() {
-	const [userId, setUserId] = useState(1)
+	const { user } = useAuth()
 	const [loading, setLoading] = useState(false)
 	const [error, setError] = useState('')
 	const [success, setSuccess] = useState('')
@@ -11,12 +12,13 @@ export default function MoneyRequest() {
 	const [requests, setRequests] = useState({ sent: [], received: [] })
 
 	useEffect(() => {
-		loadRequests()
-	}, [userId])
+		if (user) loadRequests()
+	}, [user])
 
 	async function loadRequests() {
+		if (!user) return
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_BASE || 'http://localhost:5000'}/api/requests/${userId}`)
+			const res = await fetch(`${import.meta.env.VITE_API_BASE || 'http://localhost:9135'}/api/requests/${user.id}`)
 			const data = await res.json()
 			if (data.success) {
 				setRequests({ sent: data.sent || [], received: data.received || [] })
@@ -27,10 +29,14 @@ export default function MoneyRequest() {
 	}
 
 	async function createRequest() {
+		if (!user) {
+			setError('Please login first')
+			return
+		}
 		setLoading(true); setError(''); setSuccess('')
 		try {
 			const res = await postJson('/api/requests/create', {
-				fromUserId: userId,
+				fromUserId: user.id,
 				toUserId: form.toUserId,
 				amount: form.amount,
 				message: form.message
@@ -46,11 +52,15 @@ export default function MoneyRequest() {
 	}
 
 	async function acceptRequest(requestId) {
+		if (!user) {
+			setError('Please login first')
+			return
+		}
 		setLoading(true); setError(''); setSuccess('')
 		try {
 			const res = await postJson('/api/requests/accept', {
 				requestId,
-				userId
+				userId: user.id
 			})
 			setSuccess(`Request accepted! Amount transferred: ${res.amount} BDT`)
 			loadRequests()
@@ -62,11 +72,15 @@ export default function MoneyRequest() {
 	}
 
 	async function rejectRequest(requestId) {
+		if (!user) {
+			setError('Please login first')
+			return
+		}
 		setLoading(true); setError(''); setSuccess('')
 		try {
 			const res = await postJson('/api/requests/reject', {
 				requestId,
-				userId
+				userId: user.id
 			})
 			setSuccess('Request rejected')
 			loadRequests()
@@ -120,10 +134,6 @@ export default function MoneyRequest() {
 
 			{activeTab === 'create' && (
 				<div className="form card">
-					<div className="field" style={{ maxWidth: 240 }}>
-						<label>Your User ID</label>
-						<input value={userId} onChange={e => setUserId(Number(e.target.value || 0))} placeholder="1" />
-					</div>
 					<div className="field">
 						<label>Request From User ID</label>
 						<input value={form.toUserId} onChange={e => setForm({ ...form, toUserId: e.target.value })} placeholder="2" />

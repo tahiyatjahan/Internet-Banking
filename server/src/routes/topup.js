@@ -47,8 +47,9 @@ router.post('/topup/card', async (req, res) => {
 		const amt = parseAmount(amount)
 		const result = await sequelize.transaction(async (t) => {
 			const account = await getOrCreateAccount(Number(userId), t)
-			const newBalance = Number(account.balance) + amt
-			account.balance = newBalance
+			const currentBalance = parseFloat(String(account.balance)) || 0
+			const newBalance = currentBalance + amt
+			account.balance = newBalance.toFixed(2)
 			await account.save({ transaction: t })
 			const txn = await Transaction.create({ accountId: account.id, type: 'CARD_TOPUP', amount: amt, reference: 'CARD' }, { transaction: t })
 			return { balance: newBalance.toFixed(2), transactionId: txn.id }
@@ -66,8 +67,9 @@ router.post('/topup/bank', async (req, res) => {
 		const amt = parseAmount(amount)
 		const result = await sequelize.transaction(async (t) => {
 			const account = await getOrCreateAccount(Number(userId), t)
-			const newBalance = Number(account.balance) + amt
-			account.balance = newBalance
+			const currentBalance = parseFloat(String(account.balance)) || 0
+			const newBalance = currentBalance + amt
+			account.balance = newBalance.toFixed(2)
 			await account.save({ transaction: t })
 			const txn = await Transaction.create({ accountId: account.id, type: 'BANK_TOPUP', amount: amt, reference: 'BANK' }, { transaction: t })
 			return { balance: newBalance.toFixed(2), transactionId: txn.id }
@@ -85,8 +87,9 @@ router.post('/topup/prepaid', async (req, res) => {
 		const amt = parseAmount(amount)
 		const result = await sequelize.transaction(async (t) => {
 			const account = await getOrCreateAccount(Number(userId), t)
-			const newBalance = Number(account.balance) + amt
-			account.balance = newBalance
+			const currentBalance = parseFloat(String(account.balance)) || 0
+			const newBalance = currentBalance + amt
+			account.balance = newBalance.toFixed(2)
 			await account.save({ transaction: t })
 			const txn = await Transaction.create({ accountId: account.id, type: 'PREPAID_TOPUP', amount: amt, reference: 'PREPAID' }, { transaction: t })
 			return { balance: newBalance.toFixed(2), transactionId: txn.id }
