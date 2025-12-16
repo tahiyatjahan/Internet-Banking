@@ -15,6 +15,23 @@ export default function Profile() {
 	const [error, setError] = useState('')
 	const [success, setSuccess] = useState('')
 
+	const currencySymbol = (code) => {
+		const map = {
+			BDT: '৳',
+			USD: '$',
+			EUR: '€',
+			GBP: '£',
+			INR: '₹',
+			AED: 'د.إ',
+			SAR: '﷼',
+			CAD: 'C$',
+			AUD: 'A$',
+			JPY: '¥',
+			CNY: '¥'
+		}
+		return map[code] || ''
+	}
+
 	useEffect(() => {
 		if (!user) {
 			navigate('/login')
@@ -163,10 +180,10 @@ export default function Profile() {
 					Account Balance
 				</div>
 				<div style={{ fontSize: '40px', fontWeight: '700', letterSpacing: '-1px', marginBottom: '4px' }}>
-					৳{balance || '0.00'}
+					{currencySymbol(user?.currency)}{balance || '0.00'}
 				</div>
 				<div style={{ fontSize: '13px', opacity: 0.9 }}>
-					BDT (Bangladeshi Taka)
+					{user?.currency || 'BDT'}
 				</div>
 			</div>
 

@@ -29,6 +29,7 @@ export default function AddMoney() {
 	const { user } = useAuth()
 	const navigate = useNavigate()
 	const [balance, setBalance] = useState(null)
+	const [accountCurrency, setAccountCurrency] = useState('BDT')
 	const [activeMethod, setActiveMethod] = useState(null) // 'card', 'bank', 'prepaid', or null
 
 	const [cardForm, setCardForm] = useState({ amount: '', cardNumber: '', expiryMonth: '', expiryYear: '', cvv: '' })
@@ -48,11 +49,13 @@ export default function AddMoney() {
 			const data = await res.json()
 			if (data.success) {
 				setBalance(data.user.balance)
+				setAccountCurrency(data.user.currency || 'BDT')
 			}
 		} catch (e) {
 			console.error('Failed to load balance:', e)
 		}
 	}
+
 
 	const card = useTopup(async () => {
 		if (!user) throw new Error('Please login first')
@@ -79,6 +82,24 @@ export default function AddMoney() {
 		loadBalance()
 	})
 
+	function currencySymbol(code) {
+		const map = {
+			BDT: '৳',
+			USD: '$',
+			EUR: '€',
+			GBP: '£',
+			INR: '₹',
+			AED: 'د.إ',
+			SAR: '﷼',
+			CAD: 'C$',
+			AUD: 'A$',
+			JPY: '¥',
+			CNY: '¥'
+		}
+		return map[code] || ''
+	}
+
+
 	return (
 		<div className="page">
 			<div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -104,6 +125,98 @@ export default function AddMoney() {
 					</div>
 					<div style={{ fontSize: '11px', opacity: 0.8 }}>
 						BDT
+					</div>
+				</div>
+			</div>
+
+			{/* Send Money & Payees */}
+			<div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '16px', marginBottom: '20px', alignItems: 'stretch' }}>
+				<div className="card">
+					<h3 className="title" style={{ marginBottom: '12px' }}>Send Money</h3>
+					<div className="field">
+						<label>Choose saved payee (optional)</label>
+						<select
+							value={transferForm.selectedPayee}
+							onChange={e => applyPayeeSelection(e.target.value)}
+							style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--card)', color: 'var(--white)' }}
+						>
+							<option value="">-- Select payee --</option>
+							{payees.map(p => (
+								<option key={p.id} value={p.id}>
+									{p.nickname || 'Payee'} • {p.payeeAccountNumber}
+								</option>
+							))}
+						</select>
+					</div>
+					<div className="field">
+						<label>Recipient Account Number</label>
+						<input
+							value={transferForm.toAccountNumber}
+							onChange={e => setTransferForm({ ...transferForm, toAccountNumber: e.target.value })}
+							placeholder="Enter 12-digit account number"
+						/>
+					</div>
+					<div className="field">
+						<label>Amount (BDT)</label>
+						<input
+							value={transferForm.amount}
+							onChange={e => setTransferForm({ ...transferForm, amount: e.target.value })}
+							placeholder="1000.00"
+						/>
+					</div>
+					<div className="field">
+						<label>Note (optional)</label>
+						<input
+							value={transferForm.note}
+							onChange={e => setTransferForm({ ...transferForm, note: e.target.value })}
+							placeholder="Rent, gift, invoice..."
+						/>
+					</div>
+					<button disabled={transferStatus.loading} onClick={handleSendMoney}>
+						{transferStatus.loading ? 'Sending…' : 'Send Money'}
+					</button>
+					<div className="error">{transferStatus.error}</div>
+					<div className="success">{transferStatus.success}</div>
+				</div>
+
+				<div className="card">
+					<h3 className="title" style={{ marginBottom: '12px' }}>Save Payee</h3>
+					<div className="field">
+						<label>Payee Account Number</label>
+						<input
+							value={payeeForm.accountNumber}
+							onChange={e => setPayeeForm({ ...payeeForm, accountNumber: e.target.value })}
+							placeholder="Enter payee account number"
+						/>
+					</div>
+					<div className="field">
+						<label>Nickname (optional)</label>
+						<input
+							value={payeeForm.nickname}
+							onChange={e => setPayeeForm({ ...payeeForm, nickname: e.target.value })}
+							placeholder="e.g., Mom, Landlord"
+						/>
+					</div>
+					<button disabled={payeeStatus.loading} onClick={handleSavePayee}>
+						{payeeStatus.loading ? 'Saving…' : 'Save Payee'}
+					</button>
+					<div className="error">{payeeStatus.error}</div>
+					<div className="success">{payeeStatus.success}</div>
+
+					<div style={{ marginTop: '16px' }}>
+						<h4 style={{ margin: '0 0 8px 0', fontSize: '14px' }}>Saved Payees</h4>
+						{payees.length === 0 ? (
+							<div style={{ color: 'var(--muted)', fontSize: '13px' }}>No payees saved yet.</div>
+						) : (
+							<div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+								{payees.map(p => (
+									<div key={p.id} style={{ padding: '10px 12px', border: '1px solid var(--border)', borderRadius: '8px', background: 'var(--card)' }}>
+										<div style={{ fontWeight: '600', color: 'var(--white)' }}>{p.nickname || 'Payee'}</div>
+										<div style={{ fontFamily: 'monospace', color: 'var(--muted)', fontSize: '13px' }}>{p.payeeAccountNumber}</div>
+									</div>
+								))}
+							</div>
+						)}
 					</div>
 				</div>
 			</div>
@@ -298,7 +411,7 @@ export default function AddMoney() {
 				</button>
 
 				<button
-					onClick={() => navigate('/international')}
+					onClick={() => navigate('/send-money')}
 					style={{
 						background: 'var(--card)',
 						border: '1px solid var(--border)',
@@ -325,11 +438,13 @@ export default function AddMoney() {
 					}}
 				>
 					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2">
-						<circle cx="12" cy="12" r="10"/>
-						<path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+						<path d="M4 12h16" strokeLinecap="round"/>
+						<path d="M13 7l5 5-5 5" strokeLinecap="round" strokeLinejoin="round"/>
+						<circle cx="7" cy="12" r="2"/>
 					</svg>
-					<span>International</span>
+					<span>Send Money</span>
 				</button>
+
 			</div>
 
 			{/* Form Cards - Show based on active method */}

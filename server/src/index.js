@@ -9,7 +9,7 @@ import loanRoutes from './routes/loans.js'
 import requestRoutes from './routes/requests.js'
 import authRoutes from './routes/auth.js'
 import notificationRoutes from './routes/notifications.js'
-import internationalRoutes from './routes/international.js'
+import transferRoutes from './routes/transfers.js'
 
 const app = express()
 
@@ -23,7 +23,7 @@ app.use('/api', topupRoutes)
 app.use('/api', loanRoutes)
 app.use('/api', requestRoutes)
 app.use('/api', notificationRoutes)
-app.use('/api', internationalRoutes)
+app.use('/api', transferRoutes)
 
 const port = Number(process.env.PORT || 9135)
 

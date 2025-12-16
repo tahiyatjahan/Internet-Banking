@@ -83,6 +83,18 @@ Notification.init(
 	{ sequelize, tableName: 'notifications', timestamps: true, createdAt: 'created_at', updatedAt: 'updated_at' }
 )
 
+export class Payee extends Model {}
+Payee.init(
+	{
+		id: { type: DataTypes.INTEGER.UNSIGNED, autoIncrement: true, primaryKey: true },
+		userId: { type: DataTypes.INTEGER.UNSIGNED, allowNull: false }, // owner of the payee list entry
+		payeeUserId: { type: DataTypes.INTEGER.UNSIGNED, allowNull: true }, // linked user if exists
+		payeeAccountNumber: { type: DataTypes.STRING(16), allowNull: false },
+		nickname: { type: DataTypes.STRING(255), allowNull: true }
+	},
+	{ sequelize, tableName: 'payees', timestamps: true, createdAt: 'created_at', updatedAt: 'updated_at' }
+)
+
 User.hasOne(Account, { foreignKey: 'userId', as: 'account' })
 Account.belongsTo(User, { foreignKey: 'userId', as: 'user' })
 Account.hasMany(Transaction, { foreignKey: 'accountId', as: 'transactions' })
@@ -95,5 +107,7 @@ MoneyRequest.belongsTo(User, { foreignKey: 'fromUserId', as: 'fromUser' })
 MoneyRequest.belongsTo(User, { foreignKey: 'toUserId', as: 'toUser' })
 User.hasMany(Notification, { foreignKey: 'userId', as: 'notifications' })
 Notification.belongsTo(User, { foreignKey: 'userId', as: 'user' })
+User.hasMany(Payee, { foreignKey: 'userId', as: 'payees' })
+Payee.belongsTo(User, { foreignKey: 'userId', as: 'owner' })
 
 

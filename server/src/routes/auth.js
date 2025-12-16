@@ -11,14 +11,11 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-producti
 // Register
 router.post('/register', async (req, res) => {
 	try {
-		const { email, fullName, password, currency = 'BDT' } = req.body || {}
+		const { email, fullName, password } = req.body || {}
 		
 		if (!email || !fullName || !password) {
 			return res.status(400).json({ success: false, error: 'Missing required fields' })
 		}
-		
-		const allowedCurrencies = ['BDT', 'USD']
-		const accountCurrency = allowedCurrencies.includes(currency) ? currency : 'BDT'
 		
 		if (password.length < 6) {
 			return res.status(400).json({ success: false, error: 'Password must be at least 6 characters' })
@@ -47,7 +44,7 @@ router.post('/register', async (req, res) => {
 				userId: user.id,
 				accountNumber,
 				balance: '0.00',
-				currency: accountCurrency
+				currency: 'BDT'
 			}, { transaction: t })
 			
 			// Create welcome notification
