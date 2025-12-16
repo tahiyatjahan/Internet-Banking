@@ -10,6 +10,8 @@ import requestRoutes from './routes/requests.js'
 import authRoutes from './routes/auth.js'
 import notificationRoutes from './routes/notifications.js'
 import transferRoutes from './routes/transfers.js'
+import investmentRoutes from './routes/investments.js'
+import limitRoutes from './routes/limits.js'
 
 const app = express()
 
@@ -24,6 +26,8 @@ app.use('/api', loanRoutes)
 app.use('/api', requestRoutes)
 app.use('/api', notificationRoutes)
 app.use('/api', transferRoutes)
+app.use('/api', investmentRoutes)
+app.use('/api', limitRoutes)
 
 const port = Number(process.env.PORT || 9135)
 

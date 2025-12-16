@@ -73,6 +73,28 @@ export default function Sidebar() {
 						</svg>
 					}
 				/>
+				<Tile
+					to="/investments"
+					label="Investments"
+					active={pathname === '/investments'}
+					icon={
+						<svg width="36" height="36" viewBox="0 0 24 24" fill="none">
+							<path d="M4 20v-6l4-4 4 4 6-6" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+							<path d="M14 4h6v6" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+						</svg>
+					}
+				/>
+				<Tile
+					to="/security"
+					label="Security"
+					active={pathname === '/security'}
+					icon={
+						<svg width="36" height="36" viewBox="0 0 24 24" fill="none">
+							<path d="M12 2 5 5v6c0 4 2.8 7.4 7 9 4.2-1.6 7-5 7-9V5z" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+							<path d="M10 11.5 11.5 13 15 9.5" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+						</svg>
+					}
+				/>
 			</div>
 		</aside>
 	)

@@ -8,6 +8,8 @@ import AddMoney from './pages/AddMoney.jsx'
 import Microloan from './pages/Microloan.jsx'
 import MoneyRequest from './pages/MoneyRequest.jsx'
 import SendMoney from './pages/SendMoney.jsx'
+import Investments from './pages/Investments.jsx'
+import Security from './pages/Security.jsx'
 
 function ProtectedRoute({ children }) {
 	const { user, loading } = useAuth()
@@ -40,6 +42,8 @@ function AppRoutes() {
 					<Route path="/loans" element={<ProtectedRoute><Microloan /></ProtectedRoute>} />
 					<Route path="/requests" element={<ProtectedRoute><MoneyRequest /></ProtectedRoute>} />
 					<Route path="/send-money" element={<ProtectedRoute><SendMoney /></ProtectedRoute>} />
+					<Route path="/investments" element={<ProtectedRoute><Investments /></ProtectedRoute>} />
+					<Route path="/security" element={<ProtectedRoute><Security /></ProtectedRoute>} />
 					<Route path="/login" element={<Navigate to="/profile" replace />} />
 					<Route path="/register" element={<Navigate to="/profile" replace />} />
 				</Routes>

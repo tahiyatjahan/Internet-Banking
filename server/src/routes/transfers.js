@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import { Account, Transaction, User, Payee } from '../models.js'
 import { sequelize } from '../db.js'
-import { generateAccountNumber, createNotification } from '../utils.js'
+import { generateAccountNumber, createNotification, checkAndConsumeLimit } from '../utils.js'
 
 const router = Router()
 
@@ -50,6 +50,9 @@ router.post('/transfers/send', async (req, res) => {
 			// Balance check
 			const senderBalance = parseFloat(String(senderAccount.balance)) || 0
 			if (senderBalance < amt) throw new Error(`Insufficient balance. Required: ${amt.toFixed(2)} BDT, Available: ${senderBalance.toFixed(2)} BDT`)
+
+			// Enforce transaction limits for outgoing transfers
+			await checkAndConsumeLimit(Number(fromUserId), amt, 'TRANSFER', t)
 
 			// Deduct and credit
 			const newSenderBalance = senderBalance - amt
