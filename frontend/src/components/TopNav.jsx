@@ -84,6 +84,28 @@ export default function TopNav() {
 							</svg>
 						}
 					/>
+					<NavButton
+						to="/investments"
+						label="Investments"
+						active={pathname === '/investments'}
+						icon={
+							<svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+								<path d="M12 2L2 7l10 5 10-5-10-5z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/>
+								<path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/>
+							</svg>
+						}
+					/>
+					<NavButton
+						to="/security"
+						label="Security"
+						active={pathname === '/security'}
+						icon={
+							<svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+								<rect x="3" y="11" width="18" height="11" rx="2" stroke="currentColor" strokeWidth="2"/>
+								<path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+							</svg>
+						}
+					/>
 					<NotificationBell />
 				</div>
 			</div>

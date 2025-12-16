@@ -128,6 +128,18 @@ TransactionLimit.init(
 	{ sequelize, tableName: 'transaction_limits', timestamps: true, createdAt: 'created_at', updatedAt: 'updated_at' }
 )
 
+export class LimitOTP extends Model {}
+LimitOTP.init(
+	{
+		id: { type: DataTypes.INTEGER.UNSIGNED, autoIncrement: true, primaryKey: true },
+		userId: { type: DataTypes.INTEGER.UNSIGNED, allowNull: false },
+		otp: { type: DataTypes.STRING(6), allowNull: false },
+		expiresAt: { type: DataTypes.DATE, allowNull: false },
+		used: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false }
+	},
+	{ sequelize, tableName: 'limit_otps', timestamps: true, createdAt: 'created_at', updatedAt: false }
+)
+
 User.hasOne(Account, { foreignKey: 'userId', as: 'account' })
 Account.belongsTo(User, { foreignKey: 'userId', as: 'user' })
 Account.hasMany(Transaction, { foreignKey: 'accountId', as: 'transactions' })
@@ -146,5 +158,7 @@ User.hasMany(BusinessInvestment, { foreignKey: 'userId', as: 'investments' })
 BusinessInvestment.belongsTo(User, { foreignKey: 'userId', as: 'user' })
 User.hasOne(TransactionLimit, { foreignKey: 'userId', as: 'transactionLimit' })
 TransactionLimit.belongsTo(User, { foreignKey: 'userId', as: 'user' })
+User.hasMany(LimitOTP, { foreignKey: 'userId', as: 'limitOTPs' })
+LimitOTP.belongsTo(User, { foreignKey: 'userId', as: 'user' })
 
 

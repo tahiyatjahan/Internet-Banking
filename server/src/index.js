@@ -68,6 +68,36 @@ async function start() {
 			console.log('DB connected (sync skipped)')
 		}
 
+		// Check if limit_otps table exists, if not create it
+		try {
+			const [results] = await sequelize.query(`
+				SELECT TABLE_NAME 
+				FROM INFORMATION_SCHEMA.TABLES 
+				WHERE TABLE_SCHEMA = DATABASE() 
+				AND TABLE_NAME = 'limit_otps'
+			`)
+			
+			if (results.length === 0) {
+				console.log('Creating limit_otps table...')
+				await sequelize.query(`
+					CREATE TABLE limit_otps (
+						id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+						userId INT UNSIGNED NOT NULL,
+						otp VARCHAR(6) NOT NULL,
+						expiresAt DATETIME NOT NULL,
+						used BOOLEAN NOT NULL DEFAULT FALSE,
+						created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+						INDEX idx_userId (userId),
+						INDEX idx_otp (otp),
+						FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
+					)
+				`)
+				console.log('limit_otps table created')
+			}
+		} catch (e) {
+			console.warn('Could not check/create limit_otps table:', e.message)
+		}
+
 		// Migrate existing accounts without account numbers
 		try {
 			const accountsWithoutNumber = await Account.findAll({
