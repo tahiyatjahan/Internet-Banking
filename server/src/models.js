@@ -17,10 +17,17 @@ Account.init(
 	{
 		id: { type: DataTypes.INTEGER.UNSIGNED, autoIncrement: true, primaryKey: true },
 		userId: { type: DataTypes.INTEGER.UNSIGNED, allowNull: false, unique: true },
+		accountNumber: { type: DataTypes.STRING(16), allowNull: false, unique: true },
 		balance: { type: DataTypes.DECIMAL(18, 2), allowNull: false, defaultValue: '0.00' },
 		currency: { type: DataTypes.STRING(3), allowNull: false, defaultValue: 'BDT' }
 	},
-	{ sequelize, tableName: 'accounts', timestamps: true, createdAt: false, updatedAt: 'updated_at' }
+	{ 
+		sequelize, 
+		tableName: 'accounts', 
+		timestamps: true, 
+		createdAt: false, 
+		updatedAt: 'updated_at'
+	}
 )
 
 export class Transaction extends Model {}
@@ -63,6 +70,19 @@ MoneyRequest.init(
 	{ sequelize, tableName: 'money_requests', timestamps: true, createdAt: 'created_at', updatedAt: 'updated_at' }
 )
 
+export class Notification extends Model {}
+Notification.init(
+	{
+		id: { type: DataTypes.INTEGER.UNSIGNED, autoIncrement: true, primaryKey: true },
+		userId: { type: DataTypes.INTEGER.UNSIGNED, allowNull: false },
+		title: { type: DataTypes.STRING(255), allowNull: false },
+		message: { type: DataTypes.TEXT, allowNull: false },
+		type: { type: DataTypes.ENUM('TOPUP', 'TRANSFER', 'LOAN', 'REQUEST', 'GENERAL'), allowNull: false, defaultValue: 'GENERAL' },
+		isRead: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false }
+	},
+	{ sequelize, tableName: 'notifications', timestamps: true, createdAt: 'created_at', updatedAt: 'updated_at' }
+)
+
 User.hasOne(Account, { foreignKey: 'userId', as: 'account' })
 Account.belongsTo(User, { foreignKey: 'userId', as: 'user' })
 Account.hasMany(Transaction, { foreignKey: 'accountId', as: 'transactions' })
@@ -73,5 +93,7 @@ User.hasMany(MoneyRequest, { foreignKey: 'fromUserId', as: 'sentRequests' })
 User.hasMany(MoneyRequest, { foreignKey: 'toUserId', as: 'receivedRequests' })
 MoneyRequest.belongsTo(User, { foreignKey: 'fromUserId', as: 'fromUser' })
 MoneyRequest.belongsTo(User, { foreignKey: 'toUserId', as: 'toUser' })
+User.hasMany(Notification, { foreignKey: 'userId', as: 'notifications' })
+Notification.belongsTo(User, { foreignKey: 'userId', as: 'user' })
 
 

@@ -8,7 +8,7 @@ export default function MoneyRequest() {
 	const [error, setError] = useState('')
 	const [success, setSuccess] = useState('')
 	const [activeTab, setActiveTab] = useState('create') // 'create', 'sent', 'received'
-	const [form, setForm] = useState({ toUserId: '', amount: '', message: '' })
+	const [form, setForm] = useState({ toAccountNumber: '', amount: '' })
 	const [requests, setRequests] = useState({ sent: [], received: [] })
 
 	useEffect(() => {
@@ -37,12 +37,11 @@ export default function MoneyRequest() {
 		try {
 			const res = await postJson('/api/requests/create', {
 				fromUserId: user.id,
-				toUserId: form.toUserId,
-				amount: form.amount,
-				message: form.message
+				toAccountNumber: form.toAccountNumber,
+				amount: form.amount
 			})
-			setSuccess(`Money request created! Request ID: ${res.requestId}`)
-			setForm({ toUserId: '', amount: '', message: '' })
+			setSuccess(`Money request created successfully!`)
+			setForm({ toAccountNumber: '', amount: '' })
 			loadRequests()
 		} catch (e) {
 			setError(e.message)
@@ -135,32 +134,12 @@ export default function MoneyRequest() {
 			{activeTab === 'create' && (
 				<div className="form card">
 					<div className="field">
-						<label>Request From User ID</label>
-						<input value={form.toUserId} onChange={e => setForm({ ...form, toUserId: e.target.value })} placeholder="2" />
+						<label>Request From Account Number</label>
+						<input value={form.toAccountNumber} onChange={e => setForm({ ...form, toAccountNumber: e.target.value })} placeholder="123456789012" />
 					</div>
 					<div className="field">
 						<label>Amount (BDT)</label>
 						<input value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} placeholder="500.00" />
-					</div>
-					<div className="field">
-						<label>Message (Optional)</label>
-						<textarea 
-							value={form.message} 
-							onChange={e => setForm({ ...form, message: e.target.value })} 
-							placeholder="Please send money for..."
-							style={{
-								width: '100%',
-								padding: '10px 12px',
-								borderRadius: '8px',
-								border: '1px solid #334155',
-								background: '#0b1220',
-								color: 'var(--white)',
-								outline: 'none',
-								minHeight: '80px',
-								fontFamily: 'inherit',
-								resize: 'vertical'
-							}}
-						/>
 					</div>
 					<button disabled={loading} onClick={createRequest}>{loading ? 'Processing…' : 'Create Request'}</button>
 					<div className="error">{error}</div>
@@ -179,10 +158,10 @@ export default function MoneyRequest() {
 								<div key={req.id} style={{ padding: '12px 0', borderBottom: '1px solid #1f2937' }}>
 									<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
 										<div style={{ flex: 1 }}>
-											<strong>Request #{req.id}</strong> - {Number(req.amount).toFixed(2)} BDT
+											<strong>{Number(req.amount).toFixed(2)} BDT</strong>
 											<br />
 											<small style={{ color: 'var(--muted)' }}>
-												To: User #{req.toUserId} | {req.message || 'No message'}
+												To: Account {req.toUser?.account?.accountNumber || 'N/A'} ({req.toUser?.fullName || 'Unknown'})
 											</small>
 											<br />
 											<small style={{ color: 'var(--muted)' }}>
@@ -217,10 +196,10 @@ export default function MoneyRequest() {
 								<div key={req.id} style={{ padding: '12px 0', borderBottom: '1px solid #1f2937' }}>
 									<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '8px' }}>
 										<div style={{ flex: 1 }}>
-											<strong>Request #{req.id}</strong> - {Number(req.amount).toFixed(2)} BDT
+											<strong>{Number(req.amount).toFixed(2)} BDT</strong>
 											<br />
 											<small style={{ color: 'var(--muted)' }}>
-												From: User #{req.fromUserId} | {req.message || 'No message'}
+												From: Account {req.fromUser?.account?.accountNumber || 'N/A'} ({req.fromUser?.fullName || 'Unknown'})
 											</small>
 											<br />
 											<small style={{ color: 'var(--muted)' }}>

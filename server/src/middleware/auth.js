@@ -3,7 +3,7 @@ import { User } from '../models.js'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production'
 
-export async function authenticateToken(req, res, next) {
+export async function authenticate(req, res, next) {
 	try {
 		const authHeader = req.headers.authorization
 		if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -18,7 +18,7 @@ export async function authenticateToken(req, res, next) {
 			return res.status(401).json({ success: false, error: 'User not found' })
 		}
 		
-		req.user = { id: user.id, email: user.email, fullName: user.fullName }
+		req.user = { userId: user.id, id: user.id, email: user.email, fullName: user.fullName }
 		next()
 	} catch (e) {
 		return res.status(401).json({ success: false, error: 'Invalid or expired token' })

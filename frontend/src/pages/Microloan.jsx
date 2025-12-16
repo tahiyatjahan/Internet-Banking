@@ -131,7 +131,7 @@ export default function Microloan() {
 			)}
 
 			{activeTab === 'repay' && (
-				<div className="form card">
+				<div className="form card" style={{ background: '#ffffff' }}>
 					{activeLoans.length > 0 ? (
 						<>
 							<div className="field">
@@ -143,8 +143,8 @@ export default function Microloan() {
 										width: '100%',
 										padding: '10px 12px',
 										borderRadius: '8px',
-										border: '1px solid #334155',
-										background: '#0b1220',
+										border: '1px solid var(--border)',
+										background: '#ffffff',
 										color: 'var(--white)',
 										outline: 'none'
 									}}

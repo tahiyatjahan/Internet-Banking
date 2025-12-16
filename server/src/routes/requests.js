@@ -1,6 +1,8 @@
 import { Router } from 'express'
 import { Account, Transaction, User, MoneyRequest } from '../models.js'
 import { sequelize } from '../db.js'
+import { generateAccountNumber, createNotification } from '../utils.js'
+
 
 const router = Router()
 
@@ -15,42 +17,84 @@ async function getOrCreateAccount(userId, t) {
 	if (!user) throw new Error('User not found')
 	let account = await Account.findOne({ where: { userId: user.id }, transaction: t, lock: t.LOCK.UPDATE })
 	if (!account) {
-		account = await Account.create({ userId: user.id }, { transaction: t })
+		const accountNumber = await generateAccountNumber(t)
+		account = await Account.create({ 
+			userId: user.id,
+			accountNumber,
+			balance: '0.00',
+			currency: 'BDT'
+		}, { transaction: t })
 	}
 	return account
 }
 
-// Create a money request
+
+// Helper to find user by account number
+async function findUserByAccountNumber(accountNumber, transaction = null) {
+	const account = await Account.findOne({ 
+		where: { accountNumber },
+		transaction
+	})
+	if (!account) return null
+	return await User.findByPk(account.userId, { transaction })
+}
+
 router.post('/requests/create', async (req, res) => {
 	try {
-		const { fromUserId, toUserId, amount, message } = req.body || {}
+		const { fromUserId, toAccountNumber, amount } = req.body || {}
 		const amt = parseAmount(amount)
 		
-		if (Number(fromUserId) === Number(toUserId)) {
-			throw new Error('Cannot request money from yourself')
+		if (!toAccountNumber) {
+			return res.status(400).json({ success: false, error: 'Account number is required' })
 		}
 		
 		const result = await sequelize.transaction(async (t) => {
 			const fromUser = await User.findByPk(Number(fromUserId), { transaction: t })
-			const toUser = await User.findByPk(Number(toUserId), { transaction: t })
-			
 			if (!fromUser) throw new Error('Requesting user not found')
-			if (!toUser) throw new Error('Target user not found')
+			
+			// Find toUser by account number
+			const toUser = await findUserByAccountNumber(toAccountNumber, t)
+			if (!toUser) throw new Error('Account number not found')
+			
+			if (fromUser.id === toUser.id) {
+				throw new Error('Cannot request money from yourself')
+			}
 			
 			const request = await MoneyRequest.create({
 				fromUserId: Number(fromUserId),
-				toUserId: Number(toUserId),
+				toUserId: toUser.id,
 				amount: amt,
-				message: message || null,
 				status: 'PENDING'
 			}, { transaction: t })
+			
+			// Create notifications
+			const fromUserAccount = await Account.findOne({ where: { userId: Number(fromUserId) }, transaction: t })
+			const toUserAccount = await Account.findOne({ where: { userId: toUser.id }, transaction: t })
+			
+			// Notify requester
+			await createNotification(
+				Number(fromUserId),
+				'Money Request Sent',
+				`You have requested ৳${amt.toFixed(2)} from account ${toUserAccount ? toUserAccount.accountNumber : toAccountNumber}. Waiting for approval.`,
+				'REQUEST',
+				t
+			)
+			
+			// Notify payer
+			await createNotification(
+				toUser.id,
+				'Money Request Received',
+				`You have received a money request of ৳${amt.toFixed(2)} from account ${fromUserAccount ? fromUserAccount.accountNumber : 'N/A'}.`,
+				'REQUEST',
+				t
+			)
 			
 			return {
 				requestId: request.id,
 				fromUserId: Number(fromUserId),
-				toUserId: Number(toUserId),
+				toUserId: toUser.id,
+				toAccountNumber: toAccountNumber,
 				amount: amt.toFixed(2),
-				message: message || '',
 				status: 'PENDING'
 			}
 		})
@@ -61,7 +105,7 @@ router.post('/requests/create', async (req, res) => {
 	}
 })
 
-// Accept a money request
+
 router.post('/requests/accept', async (req, res) => {
 	try {
 		const { requestId, userId } = req.body || {}
@@ -73,23 +117,26 @@ router.post('/requests/accept', async (req, res) => {
 			if (request.toUserId !== Number(userId)) throw new Error('Unauthorized')
 			if (request.status !== 'PENDING') throw new Error('Request is not pending')
 			
-			const fromAccount = await getOrCreateAccount(request.fromUserId, t)
-			const toAccount = await getOrCreateAccount(request.toUserId, t)
+			// Payer = toUser (approver); Receiver = fromUser (requester)
+			const payerAccount = await getOrCreateAccount(request.toUserId, t)
+			const receiverAccount = await getOrCreateAccount(request.fromUserId, t)
 			
-			const amount = Number(request.amount)
-			const fromBalance = Number(fromAccount.balance)
+			const amount = parseFloat(String(request.amount)) || 0
+			const payerBalance = parseFloat(String(payerAccount.balance)) || 0
 			
-			if (fromBalance < amount) {
-				throw new Error(`Insufficient balance. Required: ${amount.toFixed(2)} BDT, Available: ${fromBalance.toFixed(2)} BDT`)
+			if (payerBalance < amount) {
+				throw new Error(`Insufficient balance. Required: ${amount.toFixed(2)} BDT, Available: ${payerBalance.toFixed(2)} BDT`)
 			}
 			
 			// Transfer money
-			fromAccount.balance = fromBalance - amount
-			await fromAccount.save({ transaction: t })
+			const payerNewBalance = payerBalance - amount
+			payerAccount.balance = payerNewBalance.toFixed(2)
+			await payerAccount.save({ transaction: t })
 			
-			const toBalance = Number(toAccount.balance)
-			toAccount.balance = toBalance + amount
-			await toAccount.save({ transaction: t })
+			const receiverBalance = parseFloat(String(receiverAccount.balance)) || 0
+			const receiverNewBalance = receiverBalance + amount
+			receiverAccount.balance = receiverNewBalance.toFixed(2)
+			await receiverAccount.save({ transaction: t })
 			
 			// Update request status
 			request.status = 'ACCEPTED'
@@ -97,24 +144,43 @@ router.post('/requests/accept', async (req, res) => {
 			
 			// Create transaction records
 			await Transaction.create({
-				accountId: fromAccount.id,
+				accountId: payerAccount.id,
 				type: 'MONEY_SENT',
 				amount: -amount,
 				reference: `REQUEST-${request.id}`
 			}, { transaction: t })
 			
 			await Transaction.create({
-				accountId: toAccount.id,
+				accountId: receiverAccount.id,
 				type: 'MONEY_RECEIVED',
 				amount: amount,
 				reference: `REQUEST-${request.id}`
 			}, { transaction: t })
 			
+			// Create notifications
+			// Notify payer (toUser)
+			await createNotification(
+				request.toUserId,
+				'Money Sent',
+				`You have sent ৳${amount.toFixed(2)} to account ${receiverAccount.accountNumber}. Your new balance is ৳${payerNewBalance.toFixed(2)}.`,
+				'TRANSFER',
+				t
+			)
+			
+			// Notify receiver (fromUser)
+			await createNotification(
+				request.fromUserId,
+				'Money Received',
+				`You have received ৳${amount.toFixed(2)} from account ${payerAccount.accountNumber}. Your new balance is ৳${receiverNewBalance.toFixed(2)}.`,
+				'TRANSFER',
+				t
+			)
+			
 			return {
 				requestId: request.id,
 				amount: amount.toFixed(2),
-				fromBalance: fromAccount.balance.toFixed(2),
-				toBalance: toAccount.balance.toFixed(2)
+				fromBalance: receiverNewBalance.toFixed(2),
+				toBalance: payerNewBalance.toFixed(2)
 			}
 		})
 		
@@ -139,6 +205,28 @@ router.post('/requests/reject', async (req, res) => {
 			request.status = 'REJECTED'
 			await request.save({ transaction: t })
 			
+			// Create notifications
+			const fromUserAccount = await Account.findOne({ where: { userId: request.fromUserId }, transaction: t })
+			const toUserAccount = await Account.findOne({ where: { userId: request.toUserId }, transaction: t })
+			
+			// Notify requester
+			await createNotification(
+				request.fromUserId,
+				'Money Request Rejected',
+				`Your money request of ৳${Number(request.amount).toFixed(2)} has been rejected by account ${toUserAccount ? toUserAccount.accountNumber : 'N/A'}.`,
+				'REQUEST',
+				t
+			)
+			
+			// Notify rejector
+			await createNotification(
+				request.toUserId,
+				'Money Request Rejected',
+				`You have rejected the money request of ৳${Number(request.amount).toFixed(2)} from account ${fromUserAccount ? fromUserAccount.accountNumber : 'N/A'}.`,
+				'REQUEST',
+				t
+			)
+			
 			return {
 				requestId: request.id,
 				status: 'REJECTED'
@@ -157,12 +245,26 @@ router.get('/requests/:userId', async (req, res) => {
 		const userId = Number(req.params.userId)
 		const sent = await MoneyRequest.findAll({
 			where: { fromUserId: userId },
-			include: [{ model: User, as: 'toUser', attributes: ['id', 'fullName', 'email'] }],
+			include: [
+				{ 
+					model: User, 
+					as: 'toUser', 
+					attributes: ['id', 'fullName', 'email'],
+					include: [{ model: Account, as: 'account', attributes: ['accountNumber'] }]
+				}
+			],
 			order: [['created_at', 'DESC']]
 		})
 		const received = await MoneyRequest.findAll({
 			where: { toUserId: userId },
-			include: [{ model: User, as: 'fromUser', attributes: ['id', 'fullName', 'email'] }],
+			include: [
+				{ 
+					model: User, 
+					as: 'fromUser', 
+					attributes: ['id', 'fullName', 'email'],
+					include: [{ model: Account, as: 'account', attributes: ['accountNumber'] }]
+				}
+			],
 			order: [['created_at', 'DESC']]
 		})
 		return res.json({ success: true, sent, received })

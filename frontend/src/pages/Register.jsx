@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext.jsx'
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:9135'
 
 export default function Register() {
-	const [form, setForm] = useState({ email: '', fullName: '', password: '', confirmPassword: '' })
+	const [form, setForm] = useState({ email: '', fullName: '', password: '', confirmPassword: '', currency: 'BDT' })
 	const [loading, setLoading] = useState(false)
 	const [error, setError] = useState('')
 	const { login } = useAuth()
@@ -35,7 +35,8 @@ export default function Register() {
 				body: JSON.stringify({
 					email: form.email,
 					fullName: form.fullName,
-					password: form.password
+					password: form.password,
+					currency: form.currency
 				})
 			})
 			const data = await res.json()
@@ -68,6 +69,20 @@ export default function Register() {
 						placeholder="John Doe"
 						required
 					/>
+				</div>
+				<div className="field">
+					<label>Account Type</label>
+					<select
+						value={form.currency}
+						onChange={e => setForm({ ...form, currency: e.target.value })}
+						style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--card)', color: 'var(--white)' }}
+					>
+						<option value="BDT">Bangladeshi Account (BDT)</option>
+						<option value="USD">International Account (USD)</option>
+					</select>
+					<small style={{ color: 'var(--muted)', fontSize: '11px' }}>
+						You can transact between account types with automatic currency conversion.
+					</small>
 				</div>
 				<div className="field">
 					<label>Email</label>

@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { Account, Transaction, User } from '../models.js'
 import { sequelize } from '../db.js'
+import { generateAccountNumber, createNotification } from '../utils.js'
 
 const router = Router()
 
@@ -15,7 +16,13 @@ async function getOrCreateAccount(userId, t) {
 	if (!user) throw new Error('User not found')
 	let account = await Account.findOne({ where: { userId: user.id }, transaction: t, lock: t.LOCK.UPDATE })
 	if (!account) {
-		account = await Account.create({ userId: user.id }, { transaction: t })
+		const accountNumber = await generateAccountNumber(t)
+		account = await Account.create({ 
+			userId: user.id,
+			accountNumber,
+			balance: '0.00',
+			currency: 'BDT'
+		}, { transaction: t })
 	}
 	return account
 }
@@ -52,6 +59,16 @@ router.post('/topup/card', async (req, res) => {
 			account.balance = newBalance.toFixed(2)
 			await account.save({ transaction: t })
 			const txn = await Transaction.create({ accountId: account.id, type: 'CARD_TOPUP', amount: amt, reference: 'CARD' }, { transaction: t })
+			
+			// Create notification
+			await createNotification(
+				Number(userId),
+				'Card Top-up Successful',
+				`You have successfully added ৳${amt.toFixed(2)} to your account via card. Your new balance is ৳${newBalance.toFixed(2)}.`,
+				'TOPUP',
+				t
+			)
+			
 			return { balance: newBalance.toFixed(2), transactionId: txn.id }
 		})
 		return res.status(201).json({ success: true, ...result })
@@ -72,6 +89,16 @@ router.post('/topup/bank', async (req, res) => {
 			account.balance = newBalance.toFixed(2)
 			await account.save({ transaction: t })
 			const txn = await Transaction.create({ accountId: account.id, type: 'BANK_TOPUP', amount: amt, reference: 'BANK' }, { transaction: t })
+			
+			// Create notification
+			await createNotification(
+				Number(userId),
+				'Bank Transfer Successful',
+				`You have successfully added ৳${amt.toFixed(2)} to your account via bank transfer. Your new balance is ৳${newBalance.toFixed(2)}.`,
+				'TOPUP',
+				t
+			)
+			
 			return { balance: newBalance.toFixed(2), transactionId: txn.id }
 		})
 		return res.status(201).json({ success: true, ...result })
@@ -92,6 +119,16 @@ router.post('/topup/prepaid', async (req, res) => {
 			account.balance = newBalance.toFixed(2)
 			await account.save({ transaction: t })
 			const txn = await Transaction.create({ accountId: account.id, type: 'PREPAID_TOPUP', amount: amt, reference: 'PREPAID' }, { transaction: t })
+			
+			// Create notification
+			await createNotification(
+				Number(userId),
+				'Prepaid Top-up Successful',
+				`You have successfully added ৳${amt.toFixed(2)} to your account via prepaid card. Your new balance is ৳${newBalance.toFixed(2)}.`,
+				'TOPUP',
+				t
+			)
+			
 			return { balance: newBalance.toFixed(2), transactionId: txn.id }
 		})
 		return res.status(201).json({ success: true, ...result })

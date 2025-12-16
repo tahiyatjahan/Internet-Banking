@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { Account, Transaction, User, Loan } from '../models.js'
 import { sequelize } from '../db.js'
+import { generateAccountNumber, createNotification } from '../utils.js'
 
 const router = Router()
 
@@ -15,7 +16,13 @@ async function getOrCreateAccount(userId, t) {
 	if (!user) throw new Error('User not found')
 	let account = await Account.findOne({ where: { userId: user.id }, transaction: t, lock: t.LOCK.UPDATE })
 	if (!account) {
-		account = await Account.create({ userId: user.id }, { transaction: t })
+		const accountNumber = await generateAccountNumber(t)
+		account = await Account.create({ 
+			userId: user.id,
+			accountNumber,
+			balance: '0.00',
+			currency: 'BDT'
+		}, { transaction: t })
 	}
 	return account
 }
@@ -70,6 +77,15 @@ router.post('/loans/request', async (req, res) => {
 				amount: amt,
 				reference: `LOAN-${loan.id}`
 			}, { transaction: t })
+			
+			// Create notification
+			await createNotification(
+				Number(userId),
+				'Loan Disbursed',
+				`Your loan of ৳${amt.toFixed(2)} has been disbursed. Total repayment amount (including interest): ৳${totalAmount.toFixed(2)}. Due date: ${dueDate.toISOString().split('T')[0]}.`,
+				'LOAN',
+				t
+			)
 			
 			return {
 				loanId: loan.id,
@@ -127,6 +143,15 @@ router.post('/loans/repay', async (req, res) => {
 				amount: -totalAmount,
 				reference: `LOAN-${loan.id}`
 			}, { transaction: t })
+			
+			// Create notification
+			await createNotification(
+				Number(userId),
+				'Loan Repaid',
+				`You have successfully repaid your loan. Amount paid: ৳${totalAmount.toFixed(2)}. Your new balance is ৳${newBalance.toFixed(2)}.`,
+				'LOAN',
+				t
+			)
 			
 			return {
 				loanId: loan.id,
